@@ -1,0 +1,12 @@
+*.iml
+.gradle
+/local.properties
+local.properties
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+
+# IDE settings are machine-specific and should not be shared.
+/.idea
