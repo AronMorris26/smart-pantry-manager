@@ -32,11 +32,23 @@ android {
 }
 
 dependencies {
-    implementation libs.activity.ktx
+    // Core UI: AppCompat activities, Material 3 components (bottom nav, text fields,
+    // snackbars, date picker) and ConstraintLayout for the screen layouts.
     implementation libs.appcompat
-    implementation libs.constraintlayout
     implementation libs.material
+    implementation libs.constraintlayout
+
+    // Activity/Fragment: MainActivity hosts the three tab fragments; Activity also
+    // provides EdgeToEdge and the ActivityResultLauncher used to return from Add/Edit.
+    implementation libs.activity
+    implementation libs.fragment
+
+    // RecyclerView backs the pantry list and the suggested-recipes list.
+    implementation libs.recyclerview
+
+    // Local JUnit tests for the strict-matching logic (no device required).
     testImplementation libs.junit
-    androidTestImplementation libs.espresso.core
+
     androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
 }
