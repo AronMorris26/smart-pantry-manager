@@ -21,6 +21,8 @@
     <!-- Pantry screen -->
     <string name="add_ingredient">Add ingredient</string>
 
+    <string name="expires_on">Expires %1$s</string>
+
     <!-- Settings screen (built out later) -->
     <string name="settings_placeholder">Settings options will appear here.</string>
 </resources>
