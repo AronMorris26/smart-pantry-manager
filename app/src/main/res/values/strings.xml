@@ -17,4 +17,10 @@
     <!-- Empty states -->
     <string name="empty_pantry">Your pantry is empty. Tap + to add your first ingredient.</string>
     <string name="empty_suggestions">No recipes match your pantry yet - add more ingredients.</string>
+
+    <!-- Pantry screen -->
+    <string name="add_ingredient">Add ingredient</string>
+
+    <!-- Settings screen (built out later) -->
+    <string name="settings_placeholder">Settings options will appear here.</string>
 </resources>
