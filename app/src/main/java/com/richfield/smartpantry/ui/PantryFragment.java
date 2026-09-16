@@ -8,17 +8,26 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.richfield.smartpantry.R;
+import com.richfield.smartpantry.data.PantryDao;
+import com.richfield.smartpantry.model.PantryItem;
+
+import java.util.List;
 
 /**
- * Shows everything currently in the user's pantry.
+ * Shows everything currently in the user's pantry, read from the database.
  *
- * <p>The list is populated from the database in a later step; for now the screen renders its
- * layout and empty state.
+ * <p>The list is reloaded in {@link #onResume()} rather than only when the fragment is created,
+ * so it is already up to date when the user comes back from adding, editing or deleting an item
+ * on another screen.
  */
-public class PantryFragment extends Fragment {
+public class PantryFragment extends Fragment implements PantryAdapter.OnItemClickListener {
+
+    private PantryDao pantryDao;
+    private PantryAdapter adapter;
 
     private RecyclerView pantryList;
     private View emptyState;
@@ -35,15 +44,43 @@ public class PantryFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        pantryDao = new PantryDao(requireContext());
+
         pantryList = view.findViewById(R.id.pantry_list);
         emptyState = view.findViewById(R.id.empty_state);
 
-        showEmptyState(true);
+        adapter = new PantryAdapter(this);
+        pantryList.setLayoutManager(new LinearLayoutManager(requireContext()));
+        pantryList.setAdapter(adapter);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        refreshPantry();
+    }
+
+    /**
+     * Reloads the pantry and shows either the list or the empty state.
+     *
+     * <p>The read happens on the main thread. A pantry holds tens of rows rather than thousands,
+     * so the query returns well inside a frame; moving it to a background thread would add
+     * callback handling for no measurable gain at this size.
+     */
+    private void refreshPantry() {
+        List<PantryItem> items = pantryDao.getAll();
+        adapter.setItems(items);
+        showEmptyState(items.isEmpty());
     }
 
     /** Swaps between the list and the "your pantry is empty" message. */
     private void showEmptyState(boolean isEmpty) {
         emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
         pantryList.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+    }
+
+    @Override
+    public void onItemClick(@NonNull PantryItem item) {
+        // Opens the Add/Edit Ingredient screen once that Activity exists.
     }
 }
