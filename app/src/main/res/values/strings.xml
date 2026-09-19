@@ -58,4 +58,10 @@
     <string name="error_quantity_invalid">Enter a valid number</string>
     <string name="error_quantity_positive">Quantity must be greater than zero</string>
     <string name="error_unit_required">Choose a unit</string>
+
+    <!-- Delete flow -->
+    <string name="delete_title">Remove ingredient?</string>
+    <string name="delete_message">%1$s will be removed from your pantry.</string>
+    <string name="action_remove">Remove</string>
+    <string name="item_removed">%1$s removed</string>
 </resources>

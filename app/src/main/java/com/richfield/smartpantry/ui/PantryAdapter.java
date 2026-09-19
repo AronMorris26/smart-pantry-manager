@@ -28,9 +28,14 @@ import java.util.Locale;
  */
 public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryViewHolder> {
 
-    /** Implemented by the fragment so a tapped row can open the edit screen. */
+    /** Implemented by the fragment so the adapter itself need not know about navigation. */
     public interface OnItemClickListener {
+
+        /** A row was tapped - open it for editing. */
         void onItemClick(@NonNull PantryItem item);
+
+        /** A row was long-pressed - offer to remove it. */
+        void onItemLongClick(@NonNull PantryItem item);
     }
 
     /** Only used on the main thread, so a shared formatter instance is safe here. */
@@ -81,6 +86,13 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
         }
 
         holder.itemView.setOnClickListener(view -> clickListener.onItemClick(item));
+
+        holder.itemView.setOnLongClickListener(view -> {
+            clickListener.onItemLongClick(item);
+            // Returning true marks the long press as handled, so the row does not also
+            // fire its normal click and open the edit screen behind the dialog.
+            return true;
+        });
     }
 
     @Override

@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.richfield.smartpantry.AddEditIngredientActivity;
@@ -129,5 +130,45 @@ public class PantryFragment extends Fragment implements PantryAdapter.OnItemClic
     public void onItemClick(@NonNull PantryItem item) {
         addEditLauncher.launch(
                 AddEditIngredientActivity.createIntent(requireContext(), item.getId()));
+    }
+
+    /** Long-pressing a row asks before removing it, since a delete cannot be taken back. */
+    @Override
+    public void onItemLongClick(@NonNull PantryItem item) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.delete_title)
+                .setMessage(getString(R.string.delete_message, item.getName()))
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.action_remove,
+                        (dialog, which) -> deleteWithUndo(item))
+                .show();
+    }
+
+    private void deleteWithUndo(@NonNull PantryItem item) {
+        pantryDao.delete(item.getId());
+        refreshPantry();
+
+        View root = getView();
+        if (root == null) {
+            return;
+        }
+        Snackbar.make(root, getString(R.string.item_removed, item.getName()),
+                        Snackbar.LENGTH_LONG)
+                .setAnchorView(addButton)
+                .setAction(R.string.action_undo, button -> restore(item))
+                .show();
+    }
+
+    /**
+     * Puts a removed ingredient back.
+     *
+     * <p>Re-inserted rather than resurrected, so it comes back with a new row id. That is
+     * invisible to the user, and it keeps the delete a real delete instead of a hidden flag
+     * that every later query would have to filter out.
+     */
+    private void restore(@NonNull PantryItem item) {
+        pantryDao.insert(new PantryItem(
+                item.getName(), item.getQuantity(), item.getUnit(), item.getExpiryDate()));
+        refreshPantry();
     }
 }
