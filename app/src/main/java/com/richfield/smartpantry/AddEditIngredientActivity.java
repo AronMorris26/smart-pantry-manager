@@ -3,9 +3,12 @@ package com.richfield.smartpantry;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AutoCompleteTextView;
+import android.widget.EditText;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -19,6 +22,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.richfield.smartpantry.data.PantryDao;
 import com.richfield.smartpantry.model.PantryItem;
 
@@ -59,6 +63,10 @@ public class AddEditIngredientActivity extends AppCompatActivity {
     @Nullable
     private PantryItem editingItem;
 
+    private TextInputLayout nameLayout;
+    private TextInputLayout quantityLayout;
+    private TextInputLayout unitLayout;
+
     private TextInputEditText nameInput;
     private TextInputEditText quantityInput;
     private AutoCompleteTextView unitInput;
@@ -88,6 +96,10 @@ public class AddEditIngredientActivity extends AppCompatActivity {
 
         pantryDao = new PantryDao(this);
 
+        nameLayout = findViewById(R.id.layout_name);
+        quantityLayout = findViewById(R.id.layout_quantity);
+        unitLayout = findViewById(R.id.layout_unit);
+
         nameInput = findViewById(R.id.input_name);
         quantityInput = findViewById(R.id.input_quantity);
         unitInput = findViewById(R.id.input_unit);
@@ -98,6 +110,10 @@ public class AddEditIngredientActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(view -> finish());
 
         applyWindowInsets();
+
+        clearErrorWhileTyping(nameLayout, nameInput);
+        clearErrorWhileTyping(quantityLayout, quantityInput);
+        clearErrorWhileTyping(unitLayout, unitInput);
 
         // The expiry field is never typed into - tapping it opens the calendar instead.
         expiryInput.setOnClickListener(view -> showDatePicker());
@@ -201,11 +217,16 @@ public class AddEditIngredientActivity extends AppCompatActivity {
         expiryInput.setText(millis == null ? "" : displayDateFormat.format(new Date(millis)));
     }
 
-    /** Reads the form, writes the ingredient, and closes the screen. */
+    /** Validates the form, writes the ingredient, and closes the screen. */
     private void save() {
+        if (!isFormValid()) {
+            return;
+        }
+
         String name = textOf(nameInput);
         String unit = unitInput.getText().toString().trim();
-        double quantity = Double.parseDouble(textOf(quantityInput));
+        //noinspection ConstantConditions - isFormValid has already proved this parses.
+        double quantity = parseQuantity(textOf(quantityInput));
 
         if (editingItem != null) {
             editingItem.setName(name);
@@ -221,6 +242,102 @@ public class AddEditIngredientActivity extends AppCompatActivity {
         }
 
         finishWithResult(name);
+    }
+
+    /**
+     * Checks every field and shows an inline error under each one that is wrong.
+     *
+     * <p>All three checks run even after one fails, so the user sees everything that needs
+     * fixing at once rather than discovering the problems one save at a time.
+     */
+    private boolean isFormValid() {
+        boolean nameValid = validateName();
+        boolean quantityValid = validateQuantity();
+        boolean unitValid = validateUnit();
+        return nameValid && quantityValid && unitValid;
+    }
+
+    private boolean validateName() {
+        String name = textOf(nameInput);
+        if (name.isEmpty()) {
+            nameLayout.setError(getString(R.string.error_name_required));
+            return false;
+        }
+
+        // An ingredient may appear only once, so adding one that is already there - or renaming
+        // one onto another - would break the UNIQUE constraint on name_key. Comparing by id
+        // lets an item keep its own name when edited.
+        PantryItem clash = pantryDao.findByName(name);
+        if (clash != null && (editingItem == null || clash.getId() != editingItem.getId())) {
+            nameLayout.setError(getString(R.string.error_duplicate_name));
+            return false;
+        }
+
+        nameLayout.setError(null);
+        return true;
+    }
+
+    private boolean validateQuantity() {
+        String raw = textOf(quantityInput);
+        if (raw.isEmpty()) {
+            quantityLayout.setError(getString(R.string.error_quantity_required));
+            return false;
+        }
+
+        Double quantity = parseQuantity(raw);
+        if (quantity == null) {
+            quantityLayout.setError(getString(R.string.error_quantity_invalid));
+            return false;
+        }
+        if (quantity <= 0) {
+            quantityLayout.setError(getString(R.string.error_quantity_positive));
+            return false;
+        }
+
+        quantityLayout.setError(null);
+        return true;
+    }
+
+    private boolean validateUnit() {
+        if (unitInput.getText().toString().trim().isEmpty()) {
+            unitLayout.setError(getString(R.string.error_unit_required));
+            return false;
+        }
+        unitLayout.setError(null);
+        return true;
+    }
+
+    /**
+     * Parses a typed quantity, or returns null if it is not a number.
+     *
+     * <p>A comma is accepted as a decimal separator: the numeric keyboard offers whichever
+     * separator the device locale uses, and Double.parseDouble only understands a full stop.
+     */
+    @Nullable
+    private Double parseQuantity(@NonNull String raw) {
+        try {
+            return Double.parseDouble(raw.replace(',', '.'));
+        } catch (NumberFormatException notANumber) {
+            return null;
+        }
+    }
+
+    /** Removes an error as soon as the user starts correcting the field it belongs to. */
+    private void clearErrorWhileTyping(@NonNull TextInputLayout layout, @NonNull EditText field) {
+        field.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence text, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence text, int start, int before, int count) {
+                layout.setError(null);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+            }
+        });
     }
 
     /** Hands the saved name back to the pantry list so it can confirm what happened. */

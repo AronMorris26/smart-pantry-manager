@@ -50,4 +50,12 @@
         <item>clove</item>
         <item>slice</item>
     </string-array>
+
+    <!-- Validation messages -->
+    <string name="error_name_required">Enter an ingredient name</string>
+    <string name="error_duplicate_name">That ingredient is already in your pantry</string>
+    <string name="error_quantity_required">Enter a quantity</string>
+    <string name="error_quantity_invalid">Enter a valid number</string>
+    <string name="error_quantity_positive">Quantity must be greater than zero</string>
+    <string name="error_unit_required">Choose a unit</string>
 </resources>
