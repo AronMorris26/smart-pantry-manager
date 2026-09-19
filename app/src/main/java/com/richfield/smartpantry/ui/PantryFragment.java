@@ -11,6 +11,8 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.richfield.smartpantry.AddEditIngredientActivity;
 import com.richfield.smartpantry.R;
 import com.richfield.smartpantry.data.PantryDao;
 import com.richfield.smartpantry.model.PantryItem;
@@ -52,6 +54,10 @@ public class PantryFragment extends Fragment implements PantryAdapter.OnItemClic
         adapter = new PantryAdapter(this);
         pantryList.setLayoutManager(new LinearLayoutManager(requireContext()));
         pantryList.setAdapter(adapter);
+
+        FloatingActionButton addButton = view.findViewById(R.id.fab_add_item);
+        addButton.setOnClickListener(button ->
+                startActivity(AddEditIngredientActivity.createIntent(requireContext())));
     }
 
     @Override
