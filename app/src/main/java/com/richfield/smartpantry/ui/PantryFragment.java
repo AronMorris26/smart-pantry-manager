@@ -1,10 +1,14 @@
 package com.richfield.smartpantry.ui;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -12,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.richfield.smartpantry.AddEditIngredientActivity;
 import com.richfield.smartpantry.R;
 import com.richfield.smartpantry.data.PantryDao;
@@ -23,8 +28,7 @@ import java.util.List;
  * Shows everything currently in the user's pantry, read from the database.
  *
  * <p>The list is reloaded in {@link #onResume()} rather than only when the fragment is created,
- * so it is already up to date when the user comes back from adding, editing or deleting an item
- * on another screen.
+ * so it is already up to date when the user comes back from adding or editing an item.
  */
 public class PantryFragment extends Fragment implements PantryAdapter.OnItemClickListener {
 
@@ -33,6 +37,30 @@ public class PantryFragment extends Fragment implements PantryAdapter.OnItemClic
 
     private RecyclerView pantryList;
     private View emptyState;
+    private FloatingActionButton addButton;
+
+    /** Receives the result from the add/edit screen so the save can be confirmed to the user. */
+    private ActivityResultLauncher<Intent> addEditLauncher;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // Registered here rather than later: the launcher has to exist before the fragment
+        // reaches STARTED, or restoring a pending result after process death would crash.
+        addEditLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null) {
+                        return;
+                    }
+                    String savedName = result.getData()
+                            .getStringExtra(AddEditIngredientActivity.EXTRA_SAVED_NAME);
+                    if (savedName != null) {
+                        showMessage(getString(R.string.item_saved, savedName));
+                    }
+                });
+    }
 
     @Nullable
     @Override
@@ -50,14 +78,14 @@ public class PantryFragment extends Fragment implements PantryAdapter.OnItemClic
 
         pantryList = view.findViewById(R.id.pantry_list);
         emptyState = view.findViewById(R.id.empty_state);
+        addButton = view.findViewById(R.id.fab_add_item);
 
         adapter = new PantryAdapter(this);
         pantryList.setLayoutManager(new LinearLayoutManager(requireContext()));
         pantryList.setAdapter(adapter);
 
-        FloatingActionButton addButton = view.findViewById(R.id.fab_add_item);
         addButton.setOnClickListener(button ->
-                startActivity(AddEditIngredientActivity.createIntent(requireContext())));
+                addEditLauncher.launch(AddEditIngredientActivity.createIntent(requireContext())));
     }
 
     @Override
@@ -85,8 +113,21 @@ public class PantryFragment extends Fragment implements PantryAdapter.OnItemClic
         pantryList.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
     }
 
+    /** Anchored to the FAB so the message sits above it rather than covering it. */
+    private void showMessage(@NonNull String message) {
+        View root = getView();
+        if (root == null) {
+            return;
+        }
+        Snackbar.make(root, message, Snackbar.LENGTH_LONG)
+                .setAnchorView(addButton)
+                .show();
+    }
+
+    /** Tapping a row opens the same screen in edit mode, identified by the item's id. */
     @Override
     public void onItemClick(@NonNull PantryItem item) {
-        // Opens the Add/Edit Ingredient screen once that Activity exists.
+        addEditLauncher.launch(
+                AddEditIngredientActivity.createIntent(requireContext(), item.getId()));
     }
 }
