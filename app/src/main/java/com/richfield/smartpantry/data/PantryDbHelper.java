@@ -1,5 +1,6 @@
 package com.richfield.smartpantry.data;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -9,6 +10,8 @@ import androidx.annotation.NonNull;
 import com.richfield.smartpantry.data.PantryContract.PantryItems;
 import com.richfield.smartpantry.data.PantryContract.RecipeIngredients;
 import com.richfield.smartpantry.data.PantryContract.Recipes;
+import com.richfield.smartpantry.model.Recipe;
+import com.richfield.smartpantry.model.RecipeIngredient;
 
 /**
  * Creates and upgrades the local SQLite database.
@@ -26,8 +29,12 @@ public class PantryDbHelper extends SQLiteOpenHelper {
 
     public static final String DATABASE_NAME = "smart_pantry.db";
 
-    /** Bump this whenever the schema below changes, so onUpgrade runs on existing installs. */
-    public static final int DATABASE_VERSION = 1;
+    /**
+     * Bump this whenever the schema or the seeded recipe collection changes, so onUpgrade runs
+     * on existing installs. Editing SeedData without bumping this leaves old devices on the old
+     * recipes, because onCreate only ever runs once.
+     */
+    public static final int DATABASE_VERSION = 2;
 
     private static PantryDbHelper instance;
 
@@ -111,6 +118,51 @@ public class PantryDbHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_RECIPE_INGREDIENTS);
         db.execSQL(SQL_INDEX_INGREDIENTS_BY_RECIPE);
         db.execSQL(SQL_INDEX_INGREDIENTS_BY_NAME_KEY);
+
+        seedRecipes(db);
+    }
+
+    /**
+     * Writes the starter recipe collection.
+     *
+     * <p>Note that this writes through the {@code db} handed to {@link #onCreate}, and must not
+     * go via RecipeDao or {@link #getWritableDatabase()}. The database is still being created at
+     * this point, so asking the helper for it again re-enters creation and throws.
+     *
+     * <p>Wrapped in a single transaction: eighteen recipes and their ingredients are roughly a
+     * hundred inserts, and committing them one at a time would make first launch noticeably slow.
+     */
+    private void seedRecipes(@NonNull SQLiteDatabase db) {
+        db.beginTransaction();
+        try {
+            for (Recipe recipe : SeedData.getRecipes()) {
+                ContentValues recipeValues = new ContentValues();
+                recipeValues.put(Recipes.COLUMN_NAME, recipe.getName());
+                recipeValues.put(Recipes.COLUMN_STEPS, recipe.getSteps());
+                recipeValues.put(Recipes.COLUMN_SERVINGS, recipe.getServings());
+                recipeValues.put(Recipes.COLUMN_MINUTES, recipe.getMinutes());
+
+                long recipeId = db.insert(Recipes.TABLE_NAME, null, recipeValues);
+                if (recipeId == -1) {
+                    continue;
+                }
+
+                for (RecipeIngredient ingredient : recipe.getIngredients()) {
+                    ContentValues ingredientValues = new ContentValues();
+                    ingredientValues.put(RecipeIngredients.COLUMN_RECIPE_ID, recipeId);
+                    ingredientValues.put(RecipeIngredients.COLUMN_NAME, ingredient.getName());
+                    ingredientValues.put(
+                            RecipeIngredients.COLUMN_NAME_KEY, ingredient.getNameKey());
+                    ingredientValues.put(
+                            RecipeIngredients.COLUMN_QUANTITY, ingredient.getQuantity());
+                    ingredientValues.put(RecipeIngredients.COLUMN_UNIT, ingredient.getUnit());
+                    db.insert(RecipeIngredients.TABLE_NAME, null, ingredientValues);
+                }
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
     }
 
     /**
