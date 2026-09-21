@@ -30,11 +30,17 @@ public class PantryDbHelper extends SQLiteOpenHelper {
     public static final String DATABASE_NAME = "smart_pantry.db";
 
     /**
-     * Bump this whenever the schema or the seeded recipe collection changes, so onUpgrade runs
-     * on existing installs. Editing SeedData without bumping this leaves old devices on the old
-     * recipes, because onCreate only ever runs once.
+     * Bump this whenever the schema, the seeded recipe collection, or the normalisation rules
+     * change, so onUpgrade runs on existing installs. Editing SeedData without bumping this
+     * leaves old devices on the old recipes, because onCreate only ever runs once.
+     *
+     * <p>Version 3 exists because IngredientNormalizer's rules changed. Objects recalculate their
+     * key whenever their name is set, so matching was unaffected - but the name_key column was
+     * written by the old rules, and both the duplicate check and the UNIQUE constraint query it.
+     * A pantry row stored as "eggs" would no longer be found by a search for the new key "egg",
+     * letting the same ingredient be added twice.
      */
-    public static final int DATABASE_VERSION = 2;
+    public static final int DATABASE_VERSION = 3;
 
     private static PantryDbHelper instance;
 
