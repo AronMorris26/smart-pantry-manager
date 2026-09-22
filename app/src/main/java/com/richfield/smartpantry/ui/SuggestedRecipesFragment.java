@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.richfield.smartpantry.R;
+import com.richfield.smartpantry.RecipeDetailActivity;
 import com.richfield.smartpantry.data.PantryDao;
 import com.richfield.smartpantry.data.RecipeDao;
 import com.richfield.smartpantry.logic.RecipeMatcher;
@@ -73,6 +74,6 @@ public class SuggestedRecipesFragment extends Fragment
 
     @Override
     public void onRecipeClick(@NonNull Recipe recipe) {
-        // Opens the recipe detail screen once that Activity exists.
+        startActivity(RecipeDetailActivity.createIntent(requireContext(), recipe.getId()));
     }
 }

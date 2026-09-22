@@ -67,4 +67,9 @@
 
     <!-- Suggested Recipes screen -->
     <string name="recipe_meta">%1$d ingredients · %2$d servings · %3$d min</string>
+
+    <!-- Recipe detail screen -->
+    <string name="header_ingredients">Ingredients</string>
+    <string name="header_method">Method</string>
+    <string name="back">Back</string>
 </resources>
