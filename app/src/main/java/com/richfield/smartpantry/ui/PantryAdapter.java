@@ -1,15 +1,19 @@
 package com.richfield.smartpantry.ui;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.ColorRes;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.richfield.smartpantry.R;
 import com.richfield.smartpantry.model.PantryItem;
+import com.richfield.smartpantry.model.PantryItem.ExpiryStatus;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -48,8 +52,17 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
     private final List<PantryItem> items = new ArrayList<>();
     private final OnItemClickListener clickListener;
 
+    private boolean highlightExpiring = true;
+    private int expiryWindowDays = 3;
+
     public PantryAdapter(@NonNull OnItemClickListener clickListener) {
         this.clickListener = clickListener;
+    }
+
+    /** Applies the user's expiry-highlighting preferences before the next bind. */
+    public void setExpiryHighlighting(boolean enabled, int windowDays) {
+        this.highlightExpiring = enabled;
+        this.expiryWindowDays = windowDays;
     }
 
     /** Replaces the whole list with a fresh read from the database. */
@@ -75,10 +88,13 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
         holder.quantity.setText(
                 QUANTITY_FORMAT.format(item.getQuantity()) + " " + item.getUnit());
 
+        Context context = holder.itemView.getContext();
+
         if (item.hasExpiryDate()) {
             holder.expiry.setVisibility(View.VISIBLE);
-            holder.expiry.setText(holder.itemView.getContext().getString(
+            holder.expiry.setText(context.getString(
                     R.string.expires_on, EXPIRY_FORMAT.format(new Date(item.getExpiryDate()))));
+            holder.expiry.setTextColor(ContextCompat.getColor(context, expiryColourFor(item)));
         } else {
             // Must be reset explicitly: this row may have just been recycled from an
             // item that did have an expiry date.
@@ -98,6 +114,22 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
     @Override
     public int getItemCount() {
         return items.size();
+    }
+
+    @ColorRes
+    private int expiryColourFor(@NonNull PantryItem item) {
+        if (!highlightExpiring) {
+            return R.color.text_secondary;
+        }
+
+        ExpiryStatus status = item.getExpiryStatus(System.currentTimeMillis(), expiryWindowDays);
+        if (status == ExpiryStatus.EXPIRED) {
+            return R.color.status_expired;
+        }
+        if (status == ExpiryStatus.EXPIRING) {
+            return R.color.status_expiring;
+        }
+        return R.color.text_secondary;
     }
 
     /** Holds the row's views so findViewById is not called again on every bind. */

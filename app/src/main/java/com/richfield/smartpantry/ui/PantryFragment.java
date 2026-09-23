@@ -20,6 +20,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.richfield.smartpantry.AddEditIngredientActivity;
 import com.richfield.smartpantry.R;
+import com.richfield.smartpantry.data.AppPreferences;
 import com.richfield.smartpantry.data.PantryDao;
 import com.richfield.smartpantry.model.PantryItem;
 
@@ -34,6 +35,7 @@ import java.util.List;
 public class PantryFragment extends Fragment implements PantryAdapter.OnItemClickListener {
 
     private PantryDao pantryDao;
+    private AppPreferences preferences;
     private PantryAdapter adapter;
 
     private RecyclerView pantryList;
@@ -76,6 +78,7 @@ public class PantryFragment extends Fragment implements PantryAdapter.OnItemClic
         super.onViewCreated(view, savedInstanceState);
 
         pantryDao = new PantryDao(requireContext());
+        preferences = new AppPreferences(requireContext());
 
         pantryList = view.findViewById(R.id.pantry_list);
         emptyState = view.findViewById(R.id.empty_state);
@@ -103,6 +106,9 @@ public class PantryFragment extends Fragment implements PantryAdapter.OnItemClic
      * callback handling for no measurable gain at this size.
      */
     private void refreshPantry() {
+        adapter.setExpiryHighlighting(
+                preferences.isHighlightExpiringEnabled(), preferences.getExpiryWindowDays());
+
         List<PantryItem> items = pantryDao.getAll();
         adapter.setItems(items);
         showEmptyState(items.isEmpty());

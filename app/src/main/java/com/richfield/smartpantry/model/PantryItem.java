@@ -1,5 +1,7 @@
 package com.richfield.smartpantry.model;
 
+import androidx.annotation.NonNull;
+
 import com.richfield.smartpantry.logic.IngredientNormalizer;
 
 /**
@@ -9,6 +11,17 @@ import com.richfield.smartpantry.logic.IngredientNormalizer;
  * independently, so the two can never drift apart.
  */
 public class PantryItem {
+
+    /** How close an item is to its expiry date. */
+    public enum ExpiryStatus {
+        /** No expiry date was set. */
+        NONE,
+        FRESH,
+        EXPIRING,
+        EXPIRED
+    }
+
+    private static final long MILLIS_PER_DAY = 24L * 60L * 60L * 1000L;
 
     /** Id used for an item that has not been saved to the database yet. */
     public static final long NO_ID = -1L;
@@ -85,6 +98,26 @@ public class PantryItem {
 
     public boolean hasExpiryDate() {
         return expiryDate != null;
+    }
+
+    /**
+     * Where this item sits relative to its expiry date.
+     *
+     * @param now        current time in epoch millis, passed in so this stays testable
+     * @param windowDays how many days ahead counts as expiring soon
+     */
+    @NonNull
+    public ExpiryStatus getExpiryStatus(long now, int windowDays) {
+        if (expiryDate == null) {
+            return ExpiryStatus.NONE;
+        }
+        if (expiryDate < now) {
+            return ExpiryStatus.EXPIRED;
+        }
+        if (expiryDate - now <= windowDays * MILLIS_PER_DAY) {
+            return ExpiryStatus.EXPIRING;
+        }
+        return ExpiryStatus.FRESH;
     }
 
     /** True if this item has not been saved to the database yet. */
