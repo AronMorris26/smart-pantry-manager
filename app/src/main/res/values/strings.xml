@@ -23,8 +23,28 @@
 
     <string name="expires_on">Expires %1$s</string>
 
-    <!-- Settings screen (built out later) -->
-    <string name="settings_placeholder">Settings options will appear here.</string>
+    <!-- Settings screen -->
+    <string name="settings_highlight_title">Highlight expiring items</string>
+    <string name="settings_highlight_summary">Colour pantry items as their expiry date approaches.</string>
+    <string name="settings_window_label">Warn me within</string>
+    <string name="settings_sort_label">Sort pantry by</string>
+
+    <string-array name="expiry_windows">
+        <item>3 days</item>
+        <item>7 days</item>
+        <item>14 days</item>
+    </string-array>
+
+    <integer-array name="expiry_window_days">
+        <item>3</item>
+        <item>7</item>
+        <item>14</item>
+    </integer-array>
+
+    <string-array name="sort_orders">
+        <item>Name</item>
+        <item>Expiry date</item>
+    </string-array>
 
     <!-- Add / Edit Ingredient screen -->
     <string name="title_add_ingredient">Add ingredient</string>
