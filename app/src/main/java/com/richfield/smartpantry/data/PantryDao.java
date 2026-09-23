@@ -128,6 +128,29 @@ public class PantryDao {
     }
 
     /**
+     * Returns every pantry item, soonest expiry date first.
+     *
+     * <p>Items with no expiry date sort to the end rather than to the front, which is what
+     * NULLs would otherwise do.
+     */
+    @NonNull
+    public List<PantryItem> getAllByExpiry() {
+        List<PantryItem> items = new ArrayList<>();
+        SQLiteDatabase db = helper.getReadableDatabase();
+        try (Cursor cursor = db.query(
+                PantryItems.TABLE_NAME,
+                null, null, null, null, null,
+                PantryItems.COLUMN_EXPIRY_DATE + " IS NULL, "
+                        + PantryItems.COLUMN_EXPIRY_DATE + " ASC, "
+                        + PantryItems.COLUMN_NAME + " COLLATE NOCASE ASC")) {
+            while (cursor.moveToNext()) {
+                items.add(fromCursor(cursor));
+            }
+        }
+        return items;
+    }
+
+    /**
      * Returns every pantry item keyed by its normalised name.
      *
      * <p>This is the shape the strict-matching rule needs: checking whether a recipe ingredient

@@ -21,6 +21,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.richfield.smartpantry.AddEditIngredientActivity;
 import com.richfield.smartpantry.R;
 import com.richfield.smartpantry.data.AppPreferences;
+import com.richfield.smartpantry.data.AppPreferences.SortOrder;
 import com.richfield.smartpantry.data.PantryDao;
 import com.richfield.smartpantry.model.PantryItem;
 
@@ -109,7 +110,9 @@ public class PantryFragment extends Fragment implements PantryAdapter.OnItemClic
         adapter.setExpiryHighlighting(
                 preferences.isHighlightExpiringEnabled(), preferences.getExpiryWindowDays());
 
-        List<PantryItem> items = pantryDao.getAll();
+        List<PantryItem> items = preferences.getSortOrder() == SortOrder.EXPIRY
+                ? pantryDao.getAllByExpiry()
+                : pantryDao.getAll();
         adapter.setItems(items);
         showEmptyState(items.isEmpty());
     }
