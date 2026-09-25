@@ -45,6 +45,20 @@
             app:layout_constraintTop_toBottomOf="@id/recipe_name"
             tools:text="6 ingredients · 4 servings · 35 min" />
 
+        <TextView
+            android:id="@+id/recipe_missing"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="@color/status_expiring"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/recipe_meta"
+            tools:text="Missing: Cream"
+            tools:visibility="visible" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>

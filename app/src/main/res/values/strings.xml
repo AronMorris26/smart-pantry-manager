@@ -88,6 +88,10 @@
     <!-- Suggested Recipes screen -->
     <string name="recipe_meta">%1$d ingredients · %2$d servings · %3$d min</string>
 
+    <string name="section_ready_to_cook">You can cook these now</string>
+    <string name="section_almost_there">Almost there \u2014 one ingredient short</string>
+    <string name="recipe_missing">Missing: %1$s</string>
+
     <!-- Recipe detail screen -->
     <string name="header_ingredients">Ingredients</string>
     <string name="header_method">Method</string>

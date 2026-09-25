@@ -170,6 +170,52 @@ public class RecipeMatcherTest {
         assertEquals("Boiled Rice", suggestions.get(0).getName());
     }
 
+    @Test
+    public void listsARecipeMissingExactlyOneIngredientAsAlmostThere() {
+        Recipe toastie = recipe("Cheese Toastie",
+                needs("Bread", 2, "slice"),
+                needs("Cheddar cheese", 60, "g"));
+
+        RecipeMatcher.Suggestions result = RecipeMatcher.partition(
+                Collections.singletonList(toastie), pantry(have("Cheddar cheese", 200, "g")));
+
+        assertTrue(result.getReadyToCook().isEmpty());
+        assertEquals(1, result.getAlmostThere().size());
+        assertEquals("Cheese Toastie", result.getAlmostThere().get(0).getRecipe().getName());
+        assertEquals("Bread", result.getAlmostThere().get(0).getMissingIngredient());
+    }
+
+    @Test
+    public void keepsAlmostThereRecipesOutOfTheCookableList() {
+        Recipe canCook = recipe("Boiled Rice", needs("Rice", 200, "g"));
+        Recipe oneShort = recipe("Cheese Toastie",
+                needs("Bread", 2, "slice"), needs("Cheddar cheese", 60, "g"));
+        Recipe wayOff = recipe("Curry",
+                needs("Potatoes", 3, "item"), needs("Curry powder", 15, "g"));
+
+        RecipeMatcher.Suggestions result = RecipeMatcher.partition(
+                Arrays.asList(canCook, oneShort, wayOff),
+                pantry(have("Rice", 1, "kg"), have("Cheddar cheese", 200, "g")));
+
+        assertEquals(1, result.getReadyToCook().size());
+        assertEquals("Boiled Rice", result.getReadyToCook().get(0).getName());
+        assertEquals(1, result.getAlmostThere().size());
+        assertEquals("Cheese Toastie", result.getAlmostThere().get(0).getRecipe().getName());
+    }
+
+    @Test
+    public void countsAnInsufficientQuantityAsTheOneMissingIngredient() {
+        Recipe pudding = recipe("Rice Pudding",
+                needs("Rice", 150, "g"), needs("Milk", 700, "ml"));
+
+        RecipeMatcher.Suggestions result = RecipeMatcher.partition(
+                Collections.singletonList(pudding),
+                pantry(have("Rice", 1, "kg"), have("Milk", 500, "ml")));
+
+        assertTrue(result.getReadyToCook().isEmpty());
+        assertEquals("Milk", result.getAlmostThere().get(0).getMissingIngredient());
+    }
+
     // --- helpers -------------------------------------------------------------------------
 
     private static Recipe recipe(String name, RecipeIngredient... ingredients) {

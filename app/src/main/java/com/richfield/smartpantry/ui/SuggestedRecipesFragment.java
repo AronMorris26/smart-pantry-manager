@@ -18,7 +18,6 @@ import com.richfield.smartpantry.data.RecipeDao;
 import com.richfield.smartpantry.logic.RecipeMatcher;
 import com.richfield.smartpantry.model.Recipe;
 
-import java.util.List;
 
 /** Lists only the recipes the pantry can currently cover, per the strict-matching rule. */
 public class SuggestedRecipesFragment extends Fragment
@@ -62,14 +61,18 @@ public class SuggestedRecipesFragment extends Fragment
 
     /** Re-runs the match on every visit, so a pantry change is reflected immediately. */
     private void refreshSuggestions() {
-        List<Recipe> suggestions = RecipeMatcher.suggest(
+        RecipeMatcher.Suggestions suggestions = RecipeMatcher.partition(
                 recipeDao.getAll(), pantryDao.getAllByNameKey());
 
-        adapter.setRecipes(suggestions);
+        adapter.setSections(
+                getString(R.string.section_ready_to_cook), suggestions.getReadyToCook(),
+                getString(R.string.section_almost_there), suggestions.getAlmostThere());
 
-        boolean isEmpty = suggestions.isEmpty();
-        emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-        recipeList.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+        // The empty state belongs to the strict list: showing only "almost there" recipes
+        // without saying nothing matched would read as though they were suggestions.
+        boolean nothingToCook = suggestions.getReadyToCook().isEmpty();
+        emptyState.setVisibility(nothingToCook ? View.VISIBLE : View.GONE);
+        recipeList.setVisibility(nothingToCook ? View.GONE : View.VISIBLE);
     }
 
     @Override

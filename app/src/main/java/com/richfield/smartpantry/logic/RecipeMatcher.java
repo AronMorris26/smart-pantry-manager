@@ -4,12 +4,14 @@ import androidx.annotation.NonNull;
 
 import com.richfield.smartpantry.logic.UnitConverter.Dimension;
 import com.richfield.smartpantry.logic.UnitConverter.Measure;
+import com.richfield.smartpantry.model.AlmostThereRecipe;
 import com.richfield.smartpantry.model.MatchResult;
 import com.richfield.smartpantry.model.PantryItem;
 import com.richfield.smartpantry.model.Recipe;
 import com.richfield.smartpantry.model.RecipeIngredient;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -65,25 +67,68 @@ public final class RecipeMatcher {
         return new MatchResult(missing);
     }
 
+    /** The two lists the suggestions screen shows, kept strictly apart. */
+    public static final class Suggestions {
+
+        private final List<Recipe> readyToCook;
+        private final List<AlmostThereRecipe> almostThere;
+
+        Suggestions(@NonNull List<Recipe> readyToCook,
+                    @NonNull List<AlmostThereRecipe> almostThere) {
+            this.readyToCook = Collections.unmodifiableList(readyToCook);
+            this.almostThere = Collections.unmodifiableList(almostThere);
+        }
+
+        /** Recipes satisfying the strict rule in full. */
+        @NonNull
+        public List<Recipe> getReadyToCook() {
+            return readyToCook;
+        }
+
+        /** Recipes short of exactly one ingredient. Never shown as suggestions. */
+        @NonNull
+        public List<AlmostThereRecipe> getAlmostThere() {
+            return almostThere;
+        }
+    }
+
     /**
-     * Returns only the recipes the user can make right now, in the order given.
+     * Sorts every recipe into cookable, one ingredient short, or neither.
      *
-     * <p>A recipe with no ingredients at all would trivially satisfy the rule, so it is excluded
-     * rather than being offered as something the user can always cook.
+     * <p>One pass and one rule. The almost-there list is a by-product of the missing names
+     * evaluate already collects, not a second, looser match that could disagree with the first.
+     *
+     * <p>A recipe with no ingredients would trivially satisfy the rule, so it is excluded rather
+     * than offered as something the user can always cook.
      */
     @NonNull
-    public static List<Recipe> suggest(@NonNull List<Recipe> recipes,
-                                       @NonNull Map<String, PantryItem> pantryByKey) {
-        List<Recipe> canCook = new ArrayList<>();
+    public static Suggestions partition(@NonNull List<Recipe> recipes,
+                                        @NonNull Map<String, PantryItem> pantryByKey) {
+        List<Recipe> readyToCook = new ArrayList<>();
+        List<AlmostThereRecipe> almostThere = new ArrayList<>();
+
         for (Recipe recipe : recipes) {
             if (recipe.getIngredients().isEmpty()) {
                 continue;
             }
-            if (evaluate(recipe, pantryByKey).isSatisfied()) {
-                canCook.add(recipe);
+
+            MatchResult result = evaluate(recipe, pantryByKey);
+            if (result.isSatisfied()) {
+                readyToCook.add(recipe);
+            } else if (result.getMissingCount() == 1) {
+                almostThere.add(new AlmostThereRecipe(
+                        recipe, result.getMissingIngredients().get(0)));
             }
         }
-        return canCook;
+
+        return new Suggestions(readyToCook, almostThere);
+    }
+
+    /** Only the recipes the user can make right now, in the order given. */
+    @NonNull
+    public static List<Recipe> suggest(@NonNull List<Recipe> recipes,
+                                       @NonNull Map<String, PantryItem> pantryByKey) {
+        return partition(recipes, pantryByKey).getReadyToCook();
     }
 
     /**
